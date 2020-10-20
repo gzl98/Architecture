@@ -10,6 +10,7 @@
 #   Load r2, #1
 #   Add r3, r1, r2
 #   Store r3, #3
+Separate_len = 76
 
 
 def int2binstr(num, bits):
@@ -135,6 +136,7 @@ class LoadInstruction(Instruction):
 
     def __init__(self, memory: MyMemory, MDR: Register, MAR: Register, GR: Register):
         super(LoadInstruction, self).__init__(memory, MDR, MAR, GR)
+        self.instruction_name = "Load"  # 指令名称
         self.instruction_code = "10000001"  # 指令代码
 
     def check_format(self, operands: list, address):
@@ -155,8 +157,11 @@ class LoadInstruction(Instruction):
     def execute(self, operands: list):
         """执行Load命令"""
         des, src = operands[0], operands[1]  # 获取源操作数和目的操作数
+        print('Memory %d: %s' % (src, self.memory.get_data(src)))
+        print('Register %d: %s' % (des, self.GR.read(des)))
+        print("Load #%d to r%d" % (src, des))
         self.mem2reg(src=src, des=des)  # 执行内存到寄存器的转移
-        print("load ", src, " to ", des)
+        print('Register %d: %s' % (des, self.GR.read(des)))
 
 
 class AddInstruction(Instruction):
@@ -186,8 +191,12 @@ class AddInstruction(Instruction):
     def execute(self, operands: list):
         """执行Add命令"""
         des, src1, src2 = operands[0], operands[1], operands[2]  # 获取源操作数和目的操作数
+        print('Register %d: %s' % (src1, self.GR.read(src1)))
+        print('Register %d: %s' % (src2, self.GR.read(src2)))
+        print('Register %d: %s' % (des, self.GR.read(des)))
+        print("Add r%d r%d to r%d" % (src1, src2, des))
         self.GR.write(self.binary_add(self.GR.read(src1), self.GR.read(src2)), des)  # 执行加法命令
-        print("Add ", src1, src2, " to ", des)
+        print('Register %d: %s' % (des, self.GR.read(des)))
 
     @staticmethod
     def binary_add(a: str, b: str):
@@ -245,8 +254,11 @@ class StoreInstruction(Instruction):
     def execute(self, operands: list):
         """执行Load命令"""
         des, src = operands[1], operands[0]  # 获取源操作数和目的操作数
+        print('Register %d: %s' % (src, self.GR.read(src)))
+        print('Memory %d: %s' % (des, self.memory.get_data(des)))
+        print("Store r%d to #%d", (src, des))
         self.reg2mem(src=src, des=des)  # 执行寄存器到内存的转移
-        print("Store ", src, " to ", des)
+        print('Memory %d: %s' % (des, self.memory.get_data(des)))
 
 
 class Instructions:
@@ -283,6 +295,7 @@ class Translater:
         # 读取代码文件
         with open(file_name, 'r') as f:
             lines = f.readlines()
+        print('Compile Codes:')
         # 计算代码段地址
         program_address = int(self.memory.address_len / 4) - len(lines)
         self.memory.program_index = program_address
@@ -306,6 +319,8 @@ class Translater:
                     # 代码段地址加一
                     program_address += 1
                     break
+        print('\nCodes compiled!')
+        print('-' * Separate_len)
 
 
 class CPU:
@@ -321,20 +336,23 @@ class CPU:
         self.GR = Register('GR', cells=32)  # GR通用寄存器
         print('Registers initialized!')
         self.instructions = Instructions(memory=self.memory, MDR=self.MDR, MAR=self.MAR, GR=self.GR)  # 构建指令集集合对象
-        print('Instructions initialized!\n')
+        print('Instructions initialized!')
+        print('-' * Separate_len)
 
     def pc_auto_increase(self):
         # PC寄存器自增
-        print('PC寄存器自增')
-        print(self.PC.read() + '(' + str(int(self.PC.read(), 2)) + ')')
+        print('PC寄存器自增:')
+        print(self.PC.read() + '(' + str(int(self.PC.read(), 2)) + ') => ', end='')
         self.PC.write(int2binstr(int(self.PC.read(), 2) + 1, 32))  # 向下一条代码的地址移动
         print(self.PC.read() + '(' + str(int(self.PC.read(), 2)) + ')')
+        print('-' * Separate_len)
 
     def get_instruction(self):
         """取指令"""
         self.MAR.write(self.PC.read())  # 读取PC寄存器中的代码地址
         self.MDR.write(self.memory.get_data(int(self.MAR.read(), 2)))  # 从内存中读取数据到MDR寄存器
         self.IR.write(self.MDR.read())  # 将MDR寄存器的数据写入IR寄存器
+        print('Get Instruction [' + self.IR.read() + ']')
 
     def memory_init(self):
         # 内存初始化
@@ -346,6 +364,7 @@ class CPU:
         # PC寄存器初始化
         self.PC.write(int2binstr(self.memory.program_index, 32))  # 向PC寄存器写入代码段地址
         print('PC Instructions initialized')
+        print('-' * Separate_len)
 
     def execute_code(self):
         # 执行代码
@@ -369,14 +388,16 @@ class CPU:
     def run(self):
         translater = Translater(self.memory)  # 编译器
         translater.compile_code('codes.txt')  # 编译代码
-        print('\nCodes compiled!\n')
         del translater
         self.PC_instruction_init()  # 初始化PC寄存器
         # 执行程序
         while not self.program_is_end():
+            print('Run Code:')
             self.get_instruction()  # 取指令
             self.execute_code()  # 执行指令
             self.pc_auto_increase()  # PC自增
+        print("Program End!")
+        print('-' * Separate_len)
 
     def show_memory(self):
         # 展示内存
