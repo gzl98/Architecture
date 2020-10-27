@@ -1,34 +1,3 @@
-accuracy = 6  # 小数部分精度
-
-
-# 十进制直接转二进制
-def dtb(num):
-    # 判断是否为浮点数
-    if num == int(num):
-        # 若为整数
-        integer = str(bin(num))
-        integer = integer[2:]
-        return integer
-    else:
-        # 若为浮点数
-        # 取整数部分
-        integer = int(num)
-        # 取小数部分
-        flo = num - integer
-        # 整数部分进制转换
-        integercom = str(bin(integer))
-        integercom = integercom[2:]
-        # 小数部分进制转换
-        tem = flo
-        tmpflo = []
-        for i in range(accuracy):
-            tem *= 2
-            tmpflo += str(int(tem))
-            tem -= int(tem)
-        flocom = tmpflo
-        return integercom + '.' + ''.join(flocom)
-
-
 # int转32位float
 def int2float(num, bits=32, accuracy=6):
     # 判断是否为浮点数
@@ -89,8 +58,3 @@ def int2float(num, bits=32, accuracy=6):
         data += '0' * (bits - len(data))
     # return data
     return int(data, 2)
-
-
-print(dtb(176.0625))
-print(int2float(176.0625, 32))
-print(int2float(176.0625, 64))
